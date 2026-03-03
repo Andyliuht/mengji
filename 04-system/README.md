@@ -11,7 +11,7 @@
 ## 项目结构
 
 ```
-04-系统实现/
+04-system/
 ├── backend/          # 后端 API
 │   ├── src/
 │   │   ├── index.js
