@@ -1,0 +1,55 @@
+@startuml 包图-系统模块划分
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title 梦境记录与分享平台 - 包图（模块划分）
+
+package "用户模块" as UserPkg {
+  [UserController]
+  [User]
+  [Reminder]
+}
+
+package "梦境模块" as DreamPkg {
+  [DreamController]
+  [DreamService]
+  [Dream]
+  [DreamTag]
+  [Tag]
+  [TagService]
+}
+
+package "解梦模块" as InterpPkg {
+  [InterpretationController]
+  [DreamInterpretationService]
+  [DreamInterpretation]
+  [SimilarDreamService]
+}
+
+package "社区模块" as CommunityPkg {
+  [CommunityController]
+  [SharedDream]
+  [Comment]
+  [Like]
+  [Favorite]
+}
+
+package "统计与导出模块" as StatsPkg {
+  [StatisticsService]
+  [ExportService]
+}
+
+package "管理模块" as AdminPkg {
+  [AdminController]
+  [Report]
+}
+
+UserPkg --> DreamPkg : 使用
+DreamPkg --> InterpPkg : 使用
+DreamPkg --> CommunityPkg : 使用
+CommunityPkg --> DreamPkg : 依赖
+StatsPkg --> DreamPkg : 依赖
+AdminPkg --> CommunityPkg : 管理
+AdminPkg --> UserPkg : 管理
+
+@enduml

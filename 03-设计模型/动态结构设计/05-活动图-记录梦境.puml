@@ -1,0 +1,36 @@
+@startuml 活动图-记录梦境
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title 活动图：记录梦境流程
+
+start
+:用户点击「记录梦境」;
+
+:输入梦境内容\n（文字/语音/图片）;
+
+if (内容是否为空?) then (是)
+  :提示「内容不能为空」;
+  stop
+else (否)
+endif
+
+:选择或添加标签;
+
+:选择情绪\n（愉快/焦虑/悲伤/平静/其他）;
+
+:选择睡眠质量\n（1-5星）;
+
+:点击「保存」;
+
+if (保存成功?) then (是)
+  :提示「记录成功」;
+  :跳转梦境详情/列表;
+  stop
+else (否)
+  :提示错误原因;
+  :返回编辑;
+  stop
+endif
+
+@enduml

@@ -1,0 +1,46 @@
+@startuml 时序图-相似梦境匹配
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title 时序图：相似梦境匹配
+
+actor 用户 as User
+participant "InterpretationController" as Controller
+participant "SimilarDreamService" as Service
+participant "TagService" as TagSvc
+participant "Dream" as Dream
+database "数据库" as DB
+
+User -> Controller: 选择梦境，点击「相似梦境」
+activate Controller
+
+Controller -> Service: findSimilarDreams(dreamId)
+activate Service
+
+Service -> DB: 查询当前梦境及标签
+DB --> Service: Dream + List<Tag>
+
+Service -> TagSvc: getRecommendedTags()
+activate TagSvc
+TagSvc -> DB: 查询标签
+DB --> TagSvc: 标签列表
+TagSvc --> Service: List<Tag>
+deactivate TagSvc
+
+Service -> DB: 查询已分享的梦境（含标签）
+DB --> Service: List<SharedDream>
+
+loop 遍历每个已分享梦境
+  Service -> Service: calculateSimilarity(当前梦境, 候选梦境)
+  note right: 基于标签重叠度、关键词相似度计算
+end
+
+Service -> Service: 按相似度排序，取Top N
+
+Service --> Controller: List<SharedDream>（匿名处理）
+deactivate Service
+
+Controller --> User: 展示相似梦境列表
+deactivate Controller
+
+@enduml

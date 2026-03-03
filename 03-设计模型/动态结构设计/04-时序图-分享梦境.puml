@@ -1,0 +1,50 @@
+@startuml 时序图-分享梦境
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title 时序图：分享梦境
+
+actor 用户 as User
+participant "CommunityController" as Controller
+participant "DreamService" as Service
+participant "Dream" as Dream
+participant "SharedDream" as Shared
+database "数据库" as DB
+
+User -> Controller: 选择梦境，点击「分享」，选择匿名/公开
+activate Controller
+
+Controller -> Service: shareDream(dreamId, shareType)
+activate Service
+
+Service -> DB: 查询梦境
+DB --> Service: Dream
+
+alt 梦境已分享
+  Service --> Controller: 返回已分享信息
+  Controller --> User: 提示已分享
+else 未分享
+  Service -> Dream: share(shareType)
+  activate Dream
+  Dream -> Dream: 设置 isShared=true, shareType
+  Dream --> Service: 更新后的 Dream
+  deactivate Dream
+
+  Service -> Shared: create(dreamId, userId, isAnonymous)
+  activate Shared
+  Shared -> DB: 插入 SharedDream 记录
+  DB --> Shared: 成功
+  Shared --> Service: SharedDream
+  deactivate Shared
+
+  Service -> DB: 更新 Dream 分享状态
+  DB --> Service: 成功
+
+  Service --> Controller: SharedDream
+  deactivate Service
+
+  Controller --> User: 分享成功，跳转社区
+  deactivate Controller
+end
+
+@enduml

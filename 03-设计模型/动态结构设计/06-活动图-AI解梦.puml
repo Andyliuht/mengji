@@ -1,0 +1,31 @@
+@startuml 活动图-AI解梦
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title 活动图：获取AI解梦流程
+
+start
+:用户选择一条梦境记录;
+
+:点击「AI解梦」;
+
+:系统提取梦境关键词;
+
+:系统匹配解梦规则/模型;
+
+if (是否已有解梦结果?) then (是)
+  :从缓存/数据库读取;
+else (否)
+  :生成新解梦内容;
+  :保存解梦结果;
+endif
+
+:展示解梦结果给用户;
+
+if (用户是否收藏?) then (是)
+  :保存收藏记录;
+endif
+
+stop
+
+@enduml

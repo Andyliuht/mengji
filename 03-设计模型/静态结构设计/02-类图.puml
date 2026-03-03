@@ -1,0 +1,177 @@
+@startuml 梦境记录与分享平台-类图
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam classAttributeIconSize 0
+
+title 梦境记录与分享平台 - 类图（核心类）
+
+' ========== 实体层 ==========
+package "实体层 (Entity)" {
+  class User {
+    - id: String
+    - username: String
+    - password: String
+    - nickname: String
+    - avatar: String
+    - role: Enum
+    - status: Enum
+    - createdAt: DateTime
+    + register(): void
+    + login(): boolean
+    + updateProfile(): void
+  }
+
+  class Dream {
+    - id: String
+    - userId: String
+    - content: String
+    - contentType: Enum
+    - emotion: Enum
+    - sleepQuality: int
+    - isShared: boolean
+    - shareType: Enum
+    - createdAt: DateTime
+    + create(): void
+    + update(): void
+    + delete(): void
+    + share(): SharedDream
+  }
+
+  class Tag {
+    - id: String
+    - name: String
+    - category: String
+    - useCount: int
+    + getName(): String
+  }
+
+  class DreamTag {
+    - dreamId: String
+    - tagId: String
+  }
+
+  class DreamInterpretation {
+    - id: String
+    - dreamId: String
+    - userId: String
+    - content: String
+    - keywords: List<String>
+    - createdAt: DateTime
+    + getContent(): String
+  }
+
+  class SharedDream {
+    - id: String
+    - dreamId: String
+    - userId: String
+    - isAnonymous: boolean
+    - likeCount: int
+    - commentCount: int
+    - createdAt: DateTime
+    + addComment(): void
+    + addLike(): void
+    + getComments(): List<Comment>
+  }
+
+  class Comment {
+    - id: String
+    - sharedDreamId: String
+    - userId: String
+    - content: String
+    - createdAt: DateTime
+  }
+
+  class Like {
+    - id: String
+    - sharedDreamId: String
+    - userId: String
+    - createdAt: DateTime
+  }
+
+  class Favorite {
+    - id: String
+    - userId: String
+    - targetType: Enum
+    - targetId: String
+    - createdAt: DateTime
+  }
+
+  class Reminder {
+    - id: String
+    - userId: String
+    - remindTime: Time
+    - isEnabled: boolean
+    + setRemindTime(): void
+    + enable(): void
+    + disable(): void
+  }
+}
+
+' ========== 服务层 ==========
+package "服务层 (Service)" {
+  class DreamService {
+    - dreamRepository: DreamRepository
+    + createDream(dream: Dream): Dream
+    + updateDream(id: String, dream: Dream): Dream
+    + deleteDream(id: String): void
+    + getDreamsByUser(userId: String): List<Dream>
+    + exportDreams(userId: String, format: String): File
+  }
+
+  class DreamInterpretationService {
+    - interpretationRepository: DreamInterpretationRepository
+    - keywordExtractor: KeywordExtractor
+    + interpret(dream: Dream): DreamInterpretation
+    + getInterpretation(dreamId: String): DreamInterpretation
+  }
+
+  class SimilarDreamService {
+    - dreamRepository: DreamRepository
+    - tagService: TagService
+    + findSimilarDreams(dreamId: String): List<SharedDream>
+    - calculateSimilarity(dream1: Dream, dream2: Dream): double
+  }
+
+  class TagService {
+    - tagRepository: TagRepository
+    + getTagsByDream(dreamId: String): List<Tag>
+    + addTagToDream(dreamId: String, tagId: String): void
+    + getRecommendedTags(): List<Tag>
+    + createTag(name: String): Tag
+  }
+
+  class StatisticsService {
+    - dreamRepository: DreamRepository
+    + getThemeDistribution(userId: String): Map<String, int>
+    + getEmotionTrend(userId: String, range: String): List<DataPoint>
+    + getRecordFrequency(userId: String): Map<Date, int>
+  }
+
+  class ExportService {
+    + exportToPDF(dreams: List<Dream>): File
+    + exportToText(dreams: List<Dream>): File
+  }
+}
+
+' ========== 关系 ==========
+User "1" --> "*" Dream : 拥有
+User "1" --> "1" Reminder : 设置
+Dream "1" --> "*" DreamTag : 关联
+Tag "1" --> "*" DreamTag : 关联
+Dream "1" --> "0..1" DreamInterpretation : 解梦
+Dream "1" --> "0..1" SharedDream : 分享
+SharedDream "1" --> "*" Comment : 包含
+SharedDream "*" <-- "*" User : 点赞
+User "1" --> "*" Favorite : 收藏
+
+DreamService ..> Dream : 操作
+DreamInterpretationService ..> Dream : 输入
+DreamInterpretationService ..> DreamInterpretation : 输出
+SimilarDreamService ..> Dream : 输入
+SimilarDreamService ..> SharedDream : 输出
+TagService ..> Tag : 操作
+TagService ..> DreamTag : 操作
+StatisticsService ..> Dream : 统计
+ExportService ..> Dream : 输入
+
+@enduml

@@ -1,0 +1,44 @@
+@startuml 时序图-记录梦境
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title 时序图：记录梦境
+
+actor 用户 as User
+participant "DreamController" as Controller
+participant "DreamService" as Service
+participant "TagService" as TagSvc
+participant "Dream" as Dream
+participant "Tag" as Tag
+database "数据库" as DB
+
+User -> Controller: 提交梦境内容（文字/语音/图片、标签、情绪）
+activate Controller
+
+Controller -> Service: createDream(dreamData)
+activate Service
+
+Service -> TagSvc: getRecommendedTags()
+activate TagSvc
+TagSvc -> DB: 查询推荐标签
+DB --> TagSvc: 返回标签列表
+TagSvc --> Service: List<Tag>
+
+Service -> TagSvc: addTagToDream(dreamId, tagIds)
+TagSvc -> DB: 保存梦境-标签关联
+DB --> TagSvc: 成功
+
+Service -> Dream: create()
+activate Dream
+Dream -> DB: 插入梦境记录
+DB --> Dream: 返回梦境ID
+Dream --> Service: Dream
+
+Service --> Controller: Dream
+deactivate Service
+deactivate TagSvc
+
+Controller --> User: 返回成功，跳转梦境详情
+deactivate Controller
+
+@enduml

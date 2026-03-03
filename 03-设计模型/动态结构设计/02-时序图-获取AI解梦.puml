@@ -1,0 +1,53 @@
+@startuml 时序图-获取AI解梦
+!theme plain
+skinparam backgroundColor #FEFEFE
+
+title 时序图：获取AI解梦
+
+actor 用户 as User
+participant "InterpretationController" as Controller
+participant "DreamInterpretationService" as Service
+participant "KeywordExtractor" as Extractor
+participant "DreamInterpretation" as Interpretation
+database "数据库" as DB
+
+User -> Controller: 选择梦境，点击「AI解梦」
+activate Controller
+
+Controller -> Service: interpret(dreamId)
+activate Service
+
+Service -> DB: 查询梦境内容
+DB --> Service: Dream
+
+Service -> Extractor: extractKeywords(dreamContent)
+activate Extractor
+Extractor --> Service: List<String> 关键词
+deactivate Extractor
+
+Service -> Service: 根据关键词匹配解梦规则
+
+alt 已有解梦结果
+  Service -> DB: 查询历史解梦
+  DB --> Service: DreamInterpretation
+  Service --> Controller: DreamInterpretation
+else 需要生成新解梦
+  Service -> Interpretation: 生成解梦内容
+  activate Interpretation
+  Interpretation --> Service: DreamInterpretation
+  deactivate Interpretation
+  Service -> DB: 保存解梦结果
+  DB --> Service: 成功
+  Service --> Controller: DreamInterpretation
+end
+
+deactivate Service
+
+Controller --> User: 展示解梦结果
+deactivate Controller
+
+User -> Controller: 点击「收藏解梦」（可选）
+Controller -> DB: 保存收藏记录
+Controller --> User: 收藏成功
+
+@enduml

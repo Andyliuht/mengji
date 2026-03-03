@@ -1,0 +1,101 @@
+@startuml 梦境记录与分享平台-用例图
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam usecase {
+  BackgroundColor #E8F4FD
+  BorderColor #2E86AB
+  FontSize 12
+}
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+}
+
+left to right direction
+
+title 梦境记录与分享平台 - 用例图
+
+actor "注册用户" as User
+actor "访客" as Visitor
+actor "管理员" as Admin
+
+rectangle "梦境记录与分享平台" {
+  ' === 账户相关 ===
+  usecase "用户注册" as UC01
+  usecase "用户登录" as UC02
+
+  ' === 梦境记录 ===
+  usecase "记录梦境" as UC03
+  usecase "编辑梦境" as UC04
+  usecase "删除梦境" as UC05
+  usecase "管理梦境标签" as UC06
+
+  ' === AI与匹配 ===
+  usecase "获取AI解梦" as UC07
+  usecase "收藏解梦结果" as UC08
+  usecase "相似梦境匹配" as UC09
+
+  ' === 分享与互动 ===
+  usecase "分享梦境" as UC10
+  usecase "浏览分享梦境" as UC11
+  usecase "评论梦境" as UC12
+  usecase "点赞梦境" as UC13
+  usecase "收藏分享梦境" as UC14
+
+  ' === 发现与浏览 ===
+  usecase "梦境发现" as UC15
+  usecase "浏览梦境日历" as UC16
+  usecase "浏览梦境时间线" as UC17
+
+  ' === 统计与导出 ===
+  usecase "查看个人梦境统计" as UC18
+  usecase "导出梦境" as UC19
+  usecase "设置记录提醒" as UC20
+
+  ' === 管理 ===
+  usecase "内容审核" as UC21
+  usecase "用户管理" as UC22
+
+  ' === 包含关系（记录梦境时需选择/添加标签）===
+  UC03 ..> UC06 : <<include>>
+
+  ' === 扩展关系 ===
+  UC11 ..> UC12 : <<extend>>
+  UC11 ..> UC13 : <<extend>>
+  UC11 ..> UC14 : <<extend>>
+}
+
+' === 参与者与用例关联 ===
+' 访客
+Visitor --> UC01
+Visitor --> UC02
+Visitor --> UC11
+Visitor --> UC15
+
+' 注册用户
+User --> UC03
+User --> UC04
+User --> UC05
+User --> UC06
+User --> UC07
+User --> UC08
+User --> UC09
+User --> UC10
+User --> UC11
+User --> UC12
+User --> UC13
+User --> UC14
+User --> UC15
+User --> UC16
+User --> UC17
+User --> UC18
+User --> UC19
+User --> UC20
+
+' 管理员
+Admin --> UC21
+Admin --> UC22
+Admin --> UC11
+Admin --> UC15
+
+@enduml
