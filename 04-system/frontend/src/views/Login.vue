@@ -1,7 +1,7 @@
 <template>
   <div class="auth-page">
     <div class="auth-card">
-      <h1>梦境记录</h1>
+      <h1>梦迹</h1>
       <p class="subtitle">记录你的梦，发现相似的人</p>
       <form @submit.prevent="login">
         <input v-model="username" type="text" placeholder="用户名或邮箱" required />

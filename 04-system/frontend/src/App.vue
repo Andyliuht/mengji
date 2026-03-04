@@ -31,14 +31,16 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
 import { useUserStore } from './stores/user'
 import NotificationBell from './components/NotificationBell.vue'
 
+const router = useRouter()
 const userStore = useUserStore()
 
 function logout() {
   userStore.logout()
-  window.location.href = '/login'
+  router.push('/login')
 }
 </script>
 

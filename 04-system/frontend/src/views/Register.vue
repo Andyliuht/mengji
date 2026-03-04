@@ -2,7 +2,7 @@
   <div class="auth-page">
     <div class="auth-card">
       <h1>注册账号</h1>
-      <p class="subtitle">加入梦境记录平台</p>
+      <p class="subtitle">加入梦迹平台</p>
       <form @submit.prevent="register">
         <input v-model="username" type="text" placeholder="用户名" required />
         <input v-model="email" type="email" placeholder="邮箱（用于找回密码）" />
