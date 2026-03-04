@@ -21,39 +21,15 @@ router.get('/', authMiddleware, adminMiddleware, (req, res) => {
   res.json(list);
 });
 
-// 管理员：删除被举报的梦境
-router.post('/:reportId/delete', authMiddleware, adminMiddleware, (req, res) => {
+// 管理员：暂不处理举报（仅标记为已处理，不采取任何措施）
+router.post('/:reportId/dismiss', authMiddleware, adminMiddleware, (req, res) => {
   const report = db.prepare('SELECT * FROM reports WHERE id = ? AND status = ?').get(req.params.reportId, 'pending');
   if (!report) return res.status(404).json({ message: '举报不存在或已处理' });
-  const shared = db.prepare('SELECT dreamId, userId FROM shared_dreams WHERE id = ?').get(report.sharedDreamId);
-  if (!shared) return res.status(404).json({ message: '分享不存在' });
-  try {
-    const id = shared.dreamId;
-    const sharedRows = db.prepare('SELECT id FROM shared_dreams WHERE dreamId = ?').all(id);
-    for (const s of sharedRows) {
-      const commentIds = db.prepare('SELECT id FROM comments WHERE sharedDreamId = ?').all(s.id).map(c => c.id);
-      db.prepare("DELETE FROM notifications WHERE relatedType = 'shared_dream' AND relatedId = ?").run(s.id);
-      for (const cid of commentIds) {
-        db.prepare("DELETE FROM notifications WHERE relatedType = 'comment' AND relatedId = ?").run(cid);
-        db.prepare('DELETE FROM comment_likes WHERE commentId = ?').run(cid);
-      }
-      db.prepare('DELETE FROM comments WHERE sharedDreamId = ?').run(s.id);
-      db.prepare('DELETE FROM likes WHERE sharedDreamId = ?').run(s.id);
-      db.prepare('DELETE FROM dream_map_hidden WHERE sharedDreamId = ?').run(s.id);
-      db.prepare('DELETE FROM reports WHERE sharedDreamId = ?').run(s.id);
-      db.prepare('DELETE FROM shared_dreams WHERE id = ?').run(s.id);
-    }
-    db.prepare('DELETE FROM dream_tags WHERE dreamId = ?').run(id);
-    db.prepare('DELETE FROM dream_interpretations WHERE dreamId = ?').run(id);
-    db.prepare('DELETE FROM dreams WHERE id = ?').run(id);
-    db.prepare('UPDATE reports SET status = ? WHERE id = ?').run('resolved_deleted', report.id);
-    res.json({ message: '已删除该梦境' });
-  } catch (e) {
-    res.status(500).json({ message: e.message || '操作失败' });
-  }
+  db.prepare('UPDATE reports SET status = ? WHERE id = ?').run('resolved_dismissed', report.id);
+  res.json({ message: '已暂不处理' });
 });
 
-// 管理员：禁言被举报用户（支持 1/7/30 天）
+// 管理员：禁言被举报用户（支持 1/7/30 天），同时隐藏该梦境，所有人不可见
 router.post('/:reportId/mute', authMiddleware, adminMiddleware, (req, res) => {
   const report = db.prepare('SELECT * FROM reports WHERE id = ? AND status = ?').get(req.params.reportId, 'pending');
   if (!report) return res.status(404).json({ message: '举报不存在或已处理' });
@@ -63,9 +39,10 @@ router.post('/:reportId/mute', authMiddleware, adminMiddleware, (req, res) => {
   const validDays = [1, 7, 30].includes(days) ? days : 1;
   const muteUntil = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000).toISOString();
   db.prepare('UPDATE users SET mutedUntil = ? WHERE id = ?').run(muteUntil, shared.userId);
+  db.prepare('UPDATE shared_dreams SET isHidden = 1 WHERE id = ?').run(report.sharedDreamId);
   db.prepare('UPDATE reports SET status = ? WHERE id = ?').run('resolved_muted', report.id);
   const dayLabel = validDays === 1 ? '24 小时' : `${validDays} 天`;
-  res.json({ message: `已禁言该用户 ${dayLabel}` });
+  res.json({ message: `已禁言该用户 ${dayLabel}，该梦境已对所有人隐藏` });
 });
 
 export default router;

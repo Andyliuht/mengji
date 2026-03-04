@@ -227,6 +227,7 @@ onUnmounted(() => {
 }
 .fixed-top {
   margin-bottom: 1rem;
+  padding-top: 1.5rem;
   user-select: none;
 }
 .fixed-top h1 {

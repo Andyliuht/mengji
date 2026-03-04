@@ -208,8 +208,9 @@ onUnmounted(() => {
 }
 .item-delete:hover { background: #e74c3c; color: white; opacity: 1; }
 .dropdown-footer {
-  padding: 0.6rem 1rem; text-align: center; color: #6b5b95;
-  font-size: 0.9rem; text-decoration: none; border-top: 1px solid #eee;
+  padding: 0.6rem 1rem; text-align: center; color: #3d2a5c !important;
+  font-size: 0.9rem; text-decoration: none; border-top: 1px solid #ddd;
+  background: #f0ecf8; font-weight: 500;
 }
-.dropdown-footer:hover { background: #f8f8f8; }
+.dropdown-footer:hover { background: #e8e0f4; color: #5a4a84 !important; }
 </style>

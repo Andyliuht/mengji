@@ -2,7 +2,7 @@
   <div class="community">
     <div class="fixed-top">
       <h1>梦境社区</h1>
-      <p class="subtitle">发现他人分享的梦境</p>
+      <p class="subtitle">走进他人的梦境</p>
     </div>
     <div class="scroll-area">
       <div v-if="loading" class="loading">加载中...</div>
@@ -267,7 +267,8 @@ async function toggleCommentLike(item, c) {
 .community { padding: 0; display: flex; flex-direction: column; height: calc(100vh - 4rem - 3rem); min-height: 320px; }
 .fixed-top {
   flex-shrink: 0;
-  padding: 1rem 0;
+  padding: 1rem 1.5rem 1rem;
+  padding-top: 1.5rem;
   margin: 0 -1.5rem 0 -1.5rem;
   user-select: none;
 }

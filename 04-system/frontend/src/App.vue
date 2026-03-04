@@ -13,6 +13,7 @@
         <router-link to="/dream-map">梦迹地图</router-link>
         <router-link to="/stats">我的统计</router-link>
         <router-link to="/notifications">消息中心</router-link>
+        <router-link v-if="userStore.isAdmin" to="/admin/users">用户管理</router-link>
         <NotificationBell />
         <span class="user">{{ userStore.nickname }}</span>
         <router-link to="/account-delete" class="btn-outline">注销</router-link>
@@ -122,7 +123,7 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #2c2c2c; o
 .main a[href].back, .main .back { color: rgba(255,255,255,0.95) !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
 .main .subtitle { color: rgba(255,255,255,0.9) !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
 .main .select-all { color: rgba(255,255,255,0.95) !important; }
-.main .community h1, .main .dream-map-page h1, .main .stats h1, .main .notifications-page h1 { color: #fff !important; }
+.main .community h1, .main .dream-map-page h1, .main .stats h1, .main .notifications-page h1, .main .admin-users-page h1 { color: #fff !important; }
 /* 白底卡片内的 loading、empty 保持深色 */
 .main .list-section .loading, .main .list-section .empty { color: #666 !important; text-shadow: none; }
 /* 登录/注册等白底卡片内的文字保持深色 */

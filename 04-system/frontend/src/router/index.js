@@ -14,7 +14,8 @@ const routes = [
   { path: '/community', component: () => import('../views/Community.vue') },
   { path: '/dream-map', component: () => import('../views/DreamMap.vue') },
   { path: '/stats', component: () => import('../views/Stats.vue'), meta: { requiresAuth: true } },
-  { path: '/notifications', component: () => import('../views/Notifications.vue'), meta: { requiresAuth: true } }
+  { path: '/notifications', component: () => import('../views/Notifications.vue'), meta: { requiresAuth: true } },
+  { path: '/admin/users', component: () => import('../views/AdminUsers.vue'), meta: { requiresAuth: true, requiresAdmin: true } }
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })
@@ -24,6 +25,8 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !userStore.token) {
     next('/login')
   } else if (to.meta.guest && userStore.token) {
+    next('/')
+  } else if (to.meta.requiresAdmin && !userStore.isAdmin) {
     next('/')
   } else {
     next()

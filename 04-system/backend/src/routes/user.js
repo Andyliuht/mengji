@@ -76,8 +76,14 @@ router.get('/stats', authMiddleware, (req, res) => {
     }
   });
 
+  const totalLikesRow = db.prepare(
+    'SELECT COALESCE(SUM(likeCount), 0) as total FROM shared_dreams WHERE userId = ?'
+  ).get(req.userId);
+  const totalLikes = totalLikesRow?.total ?? 0;
+
   res.json({
     totalDreams: dreams.length,
+    totalLikes: Number(totalLikes),
     themeDistribution: themeCount,
     emotionDistribution: emotionCount,
     monthlyRecords: byMonth,

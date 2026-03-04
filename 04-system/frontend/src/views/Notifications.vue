@@ -28,7 +28,7 @@
             <div class="report-meta">举报人：{{ r.reporterName }} | 被举报人：{{ r.authorName }}</div>
             <div class="report-content">{{ (r.content || '').slice(0, 80) }}{{ (r.content || '').length > 80 ? '...' : '' }}</div>
             <div class="report-actions">
-              <button @click="handleReportDelete(r)" class="btn-danger">删除梦境</button>
+              <button @click="handleReportDismiss(r)" class="btn-dismiss">暂不处理</button>
               <button @click="handleReportMute(r, 1)" class="btn-mute">禁言1天</button>
               <button @click="handleReportMute(r, 7)" class="btn-mute">禁言7天</button>
               <button @click="handleReportMute(r, 30)" class="btn-mute">禁言30天</button>
@@ -155,10 +155,10 @@ async function fetchReports() {
   }
 }
 
-async function handleReportDelete(r) {
-  if (!confirm('确定要删除该梦境吗？此操作不可恢复。')) return
+async function handleReportDismiss(r) {
+  if (!confirm('确定暂不处理该举报吗？举报将标记为已处理，梦境保持现状。')) return
   try {
-    await request.post(`/reports/${r.id}/delete`)
+    await request.post(`/reports/${r.id}/dismiss`)
     reportsList.value = reportsList.value.filter(x => x.id !== r.id)
     await fetchList()
     emitChanged()
@@ -272,7 +272,8 @@ async function doBroadcast() {
 .notifications-page { max-width: 640px; display: flex; flex-direction: column; height: calc(100vh - 4rem - 3rem); min-height: 320px; }
 .fixed-top {
   flex-shrink: 0;
-  padding: 1rem 0;
+  padding: 1rem 1.5rem 1rem;
+  padding-top: 1.5rem;
   margin: 0 -1.5rem 0 -1.5rem;
   user-select: none;
 }
@@ -307,8 +308,8 @@ async function doBroadcast() {
 .report-meta { font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; }
 .report-content { font-size: 0.9rem; color: #333; margin-bottom: 0.75rem; line-height: 1.5; }
 .report-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.btn-danger { padding: 0.4rem 0.8rem; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
-.btn-danger:hover { background: #c82333; }
+.btn-dismiss { padding: 0.4rem 0.8rem; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+.btn-dismiss:hover { background: #5a6268; }
 .btn-mute { padding: 0.4rem 0.8rem; background: #6b5b95; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
 .btn-mute:hover { background: #5a4a84; }
 .broadcast-form .input, .broadcast-form .textarea {

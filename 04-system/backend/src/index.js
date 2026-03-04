@@ -10,6 +10,7 @@ import interpretationRoutes from './routes/interpretation.js';
 import userRoutes from './routes/user.js';
 import notificationRoutes from './routes/notification.js';
 import reportRoutes from './routes/reports.js';
+import adminRoutes from './routes/admin.js';
 import geoRoutes from './routes/geo.js';
 
 const app = express();
@@ -40,6 +41,7 @@ app.use('/api/interpretation', interpretationRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/admin', adminRoutes);
 app.get('/api/geo/china-map', async (req, res) => {
   try {
     const resp = await fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json');
