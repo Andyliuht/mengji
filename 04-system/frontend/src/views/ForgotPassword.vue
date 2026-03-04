@@ -22,6 +22,7 @@
 import { ref } from 'vue'
 import request from '../api/request'
 
+const username = ref('')
 const email = ref('')
 const error = ref('')
 const loading = ref(false)

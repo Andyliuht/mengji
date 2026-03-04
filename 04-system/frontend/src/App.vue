@@ -5,7 +5,7 @@
       <div class="bg-earth"></div>
       <div class="bg-stars"></div>
     </div>
-    <header class="header">
+    <header class="header" :class="{ 'header-admin': userStore.isAdmin }">
       <router-link to="/" class="logo">梦迹</router-link>
       <nav v-if="userStore.token">
         <router-link to="/">我的梦境</router-link>
@@ -106,6 +106,7 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #2c2c2c; o
   box-shadow: 0 2px 20px rgba(0,0,0,0.3);
   user-select: none;
 }
+.header-admin { background: rgba(20,60,140,0.95); }
 .logo { font-size: 1.25rem; font-weight: bold; text-decoration: none; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
 .header nav { display: flex; gap: 1.5rem; align-items: center; }
 .header nav a { color: rgba(255,255,255,0.95); text-decoration: none; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
