@@ -17,6 +17,25 @@
       </div>
     </section>
 
+    <!-- 管理员：举报管理 -->
+    <section v-if="userStore.isAdmin" class="reports-section">
+      <h2>举报管理</h2>
+      <div v-if="reportsLoading" class="loading">加载中...</div>
+      <div v-else-if="!reportsList.length" class="empty">暂无待处理举报</div>
+      <div v-else class="reports-list">
+        <div v-for="r in reportsList" :key="r.id" class="report-item">
+          <div class="report-body">
+            <div class="report-meta">举报人：{{ r.reporterName }} | 被举报人：{{ r.authorName }}</div>
+            <div class="report-content">{{ (r.content || '').slice(0, 80) }}{{ (r.content || '').length > 80 ? '...' : '' }}</div>
+            <div class="report-actions">
+              <button @click="handleReportDelete(r)" class="btn-danger">删除梦境</button>
+              <button @click="handleReportMute(r)" class="btn-mute">禁言一天</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="list-section">
       <div class="list-header">
         <span>我的消息</span>
@@ -35,7 +54,7 @@
           :class="{ unread: !n.isRead }"
           @click="handleClick(n)"
         >
-          <span class="item-type" :class="n.type">{{ n.type === 'official' ? '📢' : (n.type === 'like' || n.type === 'comment_like') ? '👍' : '💬' }}</span>
+          <span class="item-type" :class="n.type">{{ n.type === 'official' ? '📢' : n.type === 'report' ? '⚠️' : (n.type === 'like' || n.type === 'comment_like') ? '👍' : '💬' }}</span>
           <div class="item-body">
             <div class="item-title">{{ n.title }}</div>
             <div v-if="n.content" class="item-content">{{ n.content }}</div>
@@ -66,6 +85,8 @@ const broadcastContent = ref('')
 const broadcasting = ref(false)
 const broadcastMsg = ref('')
 const broadcastError = ref(false)
+const reportsList = ref([])
+const reportsLoading = ref(false)
 
 function emitChanged() {
   window.dispatchEvent(new CustomEvent('notifications-changed'))
@@ -74,6 +95,7 @@ function emitChanged() {
 onMounted(async () => {
   await fetchList()
   await fetchUnreadCount()
+  if (userStore.isAdmin) await fetchReports()
   window.addEventListener('notifications-changed', fetchList)
   window.addEventListener('notifications-changed', fetchUnreadCount)
 })
@@ -99,6 +121,42 @@ async function fetchUnreadCount() {
     unreadCount.value = res.count || 0
   } catch (e) {
     console.error(e)
+  }
+}
+
+async function fetchReports() {
+  if (!userStore.isAdmin) return
+  reportsLoading.value = true
+  try {
+    reportsList.value = await request.get('/reports')
+  } catch (e) {
+    console.error(e)
+  } finally {
+    reportsLoading.value = false
+  }
+}
+
+async function handleReportDelete(r) {
+  if (!confirm('确定要删除该梦境吗？此操作不可恢复。')) return
+  try {
+    await request.post(`/reports/${r.id}/delete`)
+    reportsList.value = reportsList.value.filter(x => x.id !== r.id)
+    await fetchList()
+    emitChanged()
+  } catch (e) {
+    alert((e && e.message) || '操作失败')
+  }
+}
+
+async function handleReportMute(r) {
+  if (!confirm('确定要禁言该用户 24 小时吗？')) return
+  try {
+    await request.post(`/reports/${r.id}/mute`)
+    reportsList.value = reportsList.value.filter(x => x.id !== r.id)
+    await fetchList()
+    emitChanged()
+  } catch (e) {
+    alert((e && e.message) || '操作失败')
   }
 }
 
@@ -143,6 +201,10 @@ function handleClick(n) {
     n.isRead = 1
     if (unreadCount.value > 0) unreadCount.value--
     emitChanged()
+  }
+  if (n.relatedType === 'report') {
+    fetchReports()
+    return
   }
   if (n.dreamId) {
     router.push(`/dream/${n.dreamId}`)
@@ -201,6 +263,27 @@ async function doBroadcast() {
   box-shadow: 0 4px 24px rgba(0,0,0,0.25); backdrop-filter: blur(8px);
 }
 .broadcast-section h2 { font-size: 1rem; color: #6b5b95; margin-bottom: 1rem; }
+.reports-section {
+  background: linear-gradient(135deg, rgba(255,248,248,0.98) 0%, rgba(255,245,245,0.98) 100%);
+  border: 1px solid rgba(229,115,115,0.3);
+  border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25); backdrop-filter: blur(8px);
+}
+.reports-section h2 { font-size: 1rem; color: #c62828; margin-bottom: 1rem; }
+.reports-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.report-item {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+}
+.report-meta { font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; }
+.report-content { font-size: 0.9rem; color: #333; margin-bottom: 0.75rem; line-height: 1.5; }
+.report-actions { display: flex; gap: 0.5rem; }
+.btn-danger { padding: 0.4rem 0.8rem; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+.btn-danger:hover { background: #c82333; }
+.btn-mute { padding: 0.4rem 0.8rem; background: #6b5b95; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+.btn-mute:hover { background: #5a4a84; }
 .broadcast-form .input, .broadcast-form .textarea {
   width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ddd;
   border-radius: 8px; font-size: 0.95rem; margin-bottom: 0.75rem;

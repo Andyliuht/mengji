@@ -6,7 +6,7 @@
         <div class="header-actions">
           <button @click="deleteSelected" class="btn-danger" :class="{ invisible: !selectedIds.length }">删除选中 ({{ selectedIds.length }})</button>
           <button @click="selectedIds = []" class="btn-outline" :class="{ invisible: !selectedIds.length }">取消选择</button>
-          <router-link to="/dream/new" class="btn-primary">记录新梦境</router-link>
+          <button @click="goToNewDream" class="btn-primary">记录新梦境</button>
         </div>
       </div>
       <div class="select-all-row" v-if="dreams.length && !loading">
@@ -20,7 +20,7 @@
       <div v-if="loading" class="loading">加载中...</div>
       <div v-else-if="dreams.length === 0" class="empty">
         <p>还没有记录过梦境</p>
-        <router-link to="/dream/new" class="btn-primary">记录第一个梦</router-link>
+        <button @click="goToNewDream" class="btn-primary">记录第一个梦</button>
       </div>
       <div v-else class="cards">
       <div v-for="d in dreams" :key="d.id" class="card" :class="getCardTheme(d)">
@@ -56,9 +56,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import request from '../api/request'
 import { useUserStore } from '../stores/user'
 import { formatDate } from '../utils/date'
+
+const router = useRouter()
 
 const DREAM_QUOTES = [
   // 经典名言
@@ -129,6 +132,19 @@ function formatLocation(d) {
   if (d.location) return d.location
   if (d.latitude != null && d.longitude != null) return `${d.latitude.toFixed(4)}°, ${d.longitude.toFixed(4)}°`
   return ''
+}
+
+async function goToNewDream() {
+  try {
+    const { canAdd } = await request.get('/dreams/can-add-today')
+    if (!canAdd) {
+      alert('您今天已记录过梦境，请先删除今日梦境后再记录新梦境。')
+      return
+    }
+    router.push('/dream/new')
+  } catch (e) {
+    alert((typeof e === 'string' ? e : e?.message) || '请求失败')
+  }
 }
 
 function toggleSelectAll(e) {

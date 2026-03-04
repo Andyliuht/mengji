@@ -16,6 +16,7 @@ router.get('/', authMiddleware, (req, res) => {
        CASE
          WHEN n.relatedType = 'shared_dream' THEN (SELECT dreamId FROM shared_dreams WHERE id = n.relatedId)
          WHEN n.relatedType = 'comment' THEN (SELECT sd.dreamId FROM comments c JOIN shared_dreams sd ON c.sharedDreamId = sd.id WHERE c.id = n.relatedId)
+         WHEN n.relatedType = 'report' THEN (SELECT sd.dreamId FROM reports r JOIN shared_dreams sd ON r.sharedDreamId = sd.id WHERE r.id = n.relatedId)
          ELSE NULL
        END as dreamId
      FROM notifications n WHERE n.userId = ? ORDER BY n.createdAt DESC LIMIT 50`

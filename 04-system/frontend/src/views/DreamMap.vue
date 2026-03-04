@@ -21,14 +21,24 @@
         </div>
         <p v-if="selectedDream.location || (selectedDream.latitude != null && selectedDream.longitude != null)" class="popup-location">📍 {{ selectedDream.location || `${selectedDream.latitude?.toFixed(4)}°, ${selectedDream.longitude?.toFixed(4)}°` }}</p>
         <p class="popup-content">{{ selectedDream.content }}</p>
-        <router-link
-          v-if="userStore.token && selectedDream.userId === userStore.userId"
-          :to="`/dream/${selectedDream.dreamId}`"
-          class="popup-link"
-          @click="selectedDream = null"
-        >
-          查看详情 →
-        </router-link>
+        <div class="popup-actions">
+          <router-link
+            v-if="userStore.token && selectedDream.userId === userStore.userId"
+            :to="`/dream/${selectedDream.dreamId}`"
+            class="popup-link"
+            @click="selectedDream = null"
+          >
+            查看详情 →
+          </router-link>
+          <button
+            v-if="userStore.token && selectedDream.userId !== userStore.userId"
+            type="button"
+            class="popup-report-btn"
+            @click="reportDream(selectedDream)"
+          >
+            ⚠️ 举报
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -153,6 +163,28 @@ function zoomToDream(dream) {
 function selectDream(dream) {
   selectedDream.value = dream
   zoomToDream(dream)
+}
+
+async function reportDream(dream) {
+  if (!confirm('确定要举报该梦境吗？举报后该梦境将暂时从社区和地图中隐藏。')) return
+  try {
+    const res = await request.post(`/community/report/${dream.sharedId}`)
+    alert(res.message || '举报成功')
+    dreamsOnMap.value = dreamsOnMap.value.filter(d => d.sharedId !== dream.sharedId)
+    selectedDream.value = null
+    hasMarkers.value = dreamsOnMap.value.length > 0
+    if (chart) {
+      const scatterData = dreamsOnMap.value.map(d => ({
+        value: [d.longitude, d.latitude],
+        dream: d,
+        symbol: 'circle',
+        symbolSize: 28
+      }))
+      chart.setOption({ series: [{ data: scatterData }] })
+    }
+  } catch (e) {
+    alert((e && e.message) || '举报失败')
+  }
 }
 
 async function refreshDreams() {
@@ -307,6 +339,12 @@ onUnmounted(() => {
   white-space: pre-wrap;
   margin-bottom: 1rem;
 }
+.popup-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
 .popup-link {
   color: #6b5b95;
   text-decoration: none;
@@ -314,5 +352,19 @@ onUnmounted(() => {
 }
 .popup-link:hover {
   text-decoration: underline;
+}
+.popup-report-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.popup-report-btn:hover {
+  border-color: #e57373;
+  color: #c62828;
+  background: #ffebee;
 }
 </style>

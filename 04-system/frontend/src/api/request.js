@@ -20,7 +20,7 @@ request.interceptors.response.use(
   res => res.data,
   err => {
     const url = err.config?.url || ''
-    const isAuthRequest = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/forgot-password') || url.includes('/auth/reset-password')
+    const isAuthRequest = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/forgot-password') || url.includes('/auth/reset-password') || url.includes('/auth/delete-account')
     if (err.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem('token')
       window.location.href = '/login'

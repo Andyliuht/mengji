@@ -6,6 +6,7 @@ const routes = [
   { path: '/register', component: () => import('../views/Register.vue'), meta: { guest: true } },
   { path: '/forgot-password', component: () => import('../views/ForgotPassword.vue'), meta: { guest: true } },
   { path: '/reset-password', component: () => import('../views/ResetPassword.vue'), meta: { guest: true } },
+  { path: '/account-delete', component: () => import('../views/DeleteAccount.vue'), meta: { requiresAuth: true } },
   { path: '/', component: () => import('../views/DreamList.vue'), meta: { requiresAuth: true } },
   { path: '/dream/new', component: () => import('../views/DreamEdit.vue'), meta: { requiresAuth: true } },
   { path: '/dream/:id', component: () => import('../views/DreamDetail.vue'), meta: { requiresAuth: true } },

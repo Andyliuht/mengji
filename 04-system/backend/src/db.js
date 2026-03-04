@@ -214,6 +214,34 @@ export function initDatabase() {
     )
   `);
 
+  // 举报表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reports (
+      id TEXT PRIMARY KEY,
+      sharedDreamId TEXT NOT NULL,
+      reporterId TEXT NOT NULL,
+      reason TEXT,
+      status TEXT DEFAULT 'pending',
+      createdAt TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (sharedDreamId) REFERENCES shared_dreams(id),
+      FOREIGN KEY (reporterId) REFERENCES users(id)
+    )
+  `);
+
+  // 迁移：shared_dreams 添加 isHidden
+  try {
+    db.exec('ALTER TABLE shared_dreams ADD COLUMN isHidden INTEGER DEFAULT 0');
+  } catch (e) {
+    if (!e.message?.includes('duplicate column')) throw e;
+  }
+
+  // 迁移：users 添加 mutedUntil
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN mutedUntil TEXT');
+  } catch (e) {
+    if (!e.message?.includes('duplicate column')) throw e;
+  }
+
   const tagCount = db.prepare('SELECT COUNT(*) as c FROM tags').get();
   if (tagCount.c === 0) {
     const defaultTags = ['飞翔', '坠落', '追逐', '考试', '水', '火', '亲人', '陌生人', '动物', '自然', '建筑', '奇幻'];

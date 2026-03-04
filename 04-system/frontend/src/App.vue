@@ -15,6 +15,7 @@
         <router-link to="/notifications">消息中心</router-link>
         <NotificationBell />
         <span class="user">{{ userStore.nickname }}</span>
+        <router-link to="/account-delete" class="btn-outline">注销</router-link>
         <button @click="logout" class="btn-outline">退出</button>
       </nav>
       <nav v-else>
@@ -112,7 +113,7 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #2c2c2c; o
 .header nav a { color: rgba(255,255,255,0.95); text-decoration: none; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
 .header nav a.router-link-active { color: white; font-weight: 600; }
 .user { font-size: 0.9rem; opacity: 0.95; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
-.btn-outline { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.9); color: white; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+.btn-outline { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.9); color: white; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-shadow: 0 1px 2px rgba(0,0,0,0.4); text-decoration: none; display: inline-flex; align-items: center; }
 .btn-outline:hover { background: rgba(255,255,255,0.25); }
 .main { max-width: 900px; margin: 0 auto; padding: 1.5rem; padding-top: 4rem; position: relative; z-index: 1; }
 .main h1 { color: #fff !important; text-shadow: 0 1px 6px rgba(0,0,0,0.6); }
@@ -126,6 +127,7 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #2c2c2c; o
 .main .list-section .loading, .main .list-section .empty { color: #666 !important; text-shadow: none; }
 /* 登录/注册等白底卡片内的文字保持深色 */
 .main .auth-card h1 { color: #2c2c2c !important; text-shadow: none; }
+.main .dream-edit h1 { color: #2c2c2c !important; text-shadow: none; }
 .main .auth-card .subtitle { color: #555 !important; text-shadow: none; }
 .main .auth-card .link { color: #555 !important; text-shadow: none; }
 .main .auth-card .link a { color: #6b5b95 !important; }

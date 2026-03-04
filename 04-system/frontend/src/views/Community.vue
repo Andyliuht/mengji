@@ -27,6 +27,7 @@
           <button @click="showComments(item)" class="action-btn comment-btn">
             <span class="comment-icon">💬</span><span class="comment-num">{{ item.commentCount }}</span>
           </button>
+          <button v-if="userStore.token && item.userId !== userStore.userId" @click="reportDream(item)" class="action-btn report-btn" title="举报">⚠️ 举报</button>
           </div>
           <div v-if="item.showComments" class="comments-panel">
           <div class="comments-title">评论</div>
@@ -221,6 +222,17 @@ async function showComments(item) {
   }
 }
 
+async function reportDream(item) {
+  if (!confirm('确定要举报该梦境吗？举报后该梦境将暂时从社区和地图中隐藏。')) return
+  try {
+    const res = await request.post(`/community/report/${item.id}`)
+    alert(res.message || '举报成功')
+    list.value = list.value.filter(i => i.id !== item.id)
+  } catch (e) {
+    alert((e && e.message) || '举报失败')
+  }
+}
+
 async function submitComment(item) {
   if (!item.newComment?.trim()) return
   try {
@@ -289,6 +301,7 @@ async function toggleCommentLike(item, c) {
 .action-btn { padding: 0.35rem 0.6rem; border: 1px solid #e0e0e0; border-radius: 8px; background: white; color: #666; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; line-height: 1; min-width: 3.5rem; }
 .action-btn:hover { border-color: #8e7cc3; color: #6b5b95; background: #f8f6fc; }
 .like-btn.liked { border-color: #e57373; color: #c62828; background: #ffebee; }
+.report-btn:hover { border-color: #e57373; color: #c62828; background: #ffebee; }
 .like-icon, .like-num, .comment-icon, .comment-num { font-size: inherit; }
 .comment-icon, .like-icon { display: inline-block; width: 1.1em; text-align: center; }
 .comments-panel { margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 8px; }

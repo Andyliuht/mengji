@@ -11,6 +11,17 @@ function generateId() {
 
 router.use(authMiddleware);
 
+router.get('/can-add-today', (req, res) => {
+  const user = db.prepare('SELECT role FROM users WHERE id = ?').get(req.userId);
+  if (user?.role === 'admin') {
+    return res.json({ canAdd: true });
+  }
+  const todayCount = db.prepare(
+    "SELECT COUNT(*) as c FROM dreams WHERE userId = ? AND date(createdAt) = date('now')"
+  ).get(req.userId);
+  res.json({ canAdd: todayCount.c < 1 });
+});
+
 router.get('/', (req, res) => {
   const dreams = db.prepare(
     `SELECT d.*, GROUP_CONCAT(t.name) as tags FROM dreams d
@@ -26,7 +37,10 @@ router.post('/', (req, res) => {
   if (!content || !content.trim()) {
     return res.status(400).json({ message: '梦境内容不能为空' });
   }
-  const user = db.prepare('SELECT role FROM users WHERE id = ?').get(req.userId);
+  const user = db.prepare('SELECT role, mutedUntil FROM users WHERE id = ?').get(req.userId);
+  if (user?.mutedUntil && user.mutedUntil > new Date().toISOString()) {
+    return res.status(403).json({ message: '您已被禁言，请稍后再试' });
+  }
   if (user?.role !== 'admin') {
     const todayCount = db.prepare(
       "SELECT COUNT(*) as c FROM dreams WHERE userId = ? AND date(createdAt) = date('now')"

@@ -71,12 +71,16 @@
             <router-link to="/community" class="link-community">去梦境社区看看 →</router-link>
           </div>
         </section>
-        <section v-if="!dream.isShared" class="section">
+        <section v-if="!dream.isShared && !shareSectionDismissed" class="section">
           <h3>分享到社区</h3>
           <div class="share-btns">
             <button @click="shareDream(true)" class="btn-outline">匿名分享</button>
             <button @click="shareDream(false)" class="btn-primary">实名分享</button>
+            <button @click="dismissShare" class="btn-outline btn-skip">暂不分享</button>
           </div>
+        </section>
+        <section v-else-if="!dream.isShared" class="section section-center">
+          <button @click="shareSectionDismissed = false" class="link-show-share">分享到社区 →</button>
         </section>
         <section v-if="dream.isShared" class="section feedback-section">
           <h3>互动反馈</h3>
@@ -135,6 +139,7 @@ const previewSrc = ref(null)
 const interpExpanded = ref(false)
 const comments = ref([])
 const commentsLoading = ref(false)
+const shareSectionDismissed = ref(false)
 
 const INTERP_PREVIEW_LEN = 120
 const interpPreview = computed(() => {
@@ -217,6 +222,11 @@ async function getSimilar() {
   }
 }
 
+function dismissShare() {
+  shareSectionDismissed.value = true
+  setTimeout(() => router.push('/'), 2000)
+}
+
 async function shareDream(isAnonymous) {
   try {
     await request.post(`/community/share/${route.params.id}`, { isAnonymous })
@@ -229,6 +239,7 @@ async function shareDream(isAnonymous) {
       finally { commentsLoading.value = false }
     }
     alert('分享成功')
+    setTimeout(() => router.push('/community'), 2000)
   } catch (e) {
     alert((e && e.message) || '分享失败')
   }
@@ -295,7 +306,12 @@ async function deleteDream() {
 .btn-expand:hover { color: #8e7cc3; }
 .btn-primary { padding: 0.5rem 1rem; background: linear-gradient(135deg, #6b5b95, #8e7cc3); color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 12px rgba(107,91,149,0.4); font-weight: 500; }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.share-btns { display: flex; gap: 0.75rem; }
+.share-btns { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+.share-btns .btn-skip { color: #888; border-color: #ddd; }
+.share-btns .btn-skip:hover { color: #666; border-color: #ccc; }
+.section-center { text-align: center; }
+.link-show-share { background: none; border: none; color: #6b5b95; cursor: pointer; font-size: 0.95rem; padding: 0; }
+.link-show-share:hover { text-decoration: underline; }
 .similar-list { margin-top: 1rem; }
 .similar-item { padding: 0.75rem; background: #f8f6fc; border-radius: 8px; margin-bottom: 0.5rem; }
 .similar-item p { font-size: 0.9rem; color: #666; margin-bottom: 0.25rem; }

@@ -69,10 +69,8 @@ router.post('/forgot-password', async (req, res) => {
     ).run(id, user.id, token, expiresAt);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const resetLink = `${frontendUrl}/reset-password?token=${token}`;
-    const sent = await sendPasswordResetEmail(email, resetLink);
-    if (!sent) {
-      return res.status(500).json({ message: '邮件发送失败，请检查服务器邮件配置' });
-    }
+    // 异步发送邮件，避免海外服务器连接 QQ SMTP 超时导致前端 timeout
+    sendPasswordResetEmail(email.trim(), resetLink).catch(e => console.error('发送邮件失败:', e.message));
     res.json({ message: '如果邮箱与用户名匹配，您将收到重置链接' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -100,6 +98,57 @@ router.post('/reset-password', (req, res) => {
     res.json({ message: '密码已重置，请使用新密码登录' });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/delete-account', (req, res) => {
+  try {
+    const { usernameOrEmail, password } = req.body;
+    if (!usernameOrEmail || !usernameOrEmail.trim()) {
+      return res.status(400).json({ message: '请输入用户名或邮箱' });
+    }
+    if (!password) {
+      return res.status(400).json({ message: '请输入密码' });
+    }
+    const user = db.prepare(
+      'SELECT * FROM users WHERE username = ? OR email = ?'
+    ).get(usernameOrEmail.trim(), usernameOrEmail.trim());
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+      return res.status(401).json({ message: '用户名/邮箱或密码错误' });
+    }
+    const userId = user.id;
+    const dreams = db.prepare('SELECT id FROM dreams WHERE userId = ?').all(userId);
+    for (const d of dreams) {
+      const shared = db.prepare('SELECT id FROM shared_dreams WHERE dreamId = ?').all(d.id);
+      for (const s of shared) {
+        const commentIds = db.prepare('SELECT id FROM comments WHERE sharedDreamId = ?').all(s.id).map(c => c.id);
+        db.prepare("DELETE FROM notifications WHERE relatedType = 'shared_dream' AND relatedId = ?").run(s.id);
+        for (const cid of commentIds) {
+          db.prepare("DELETE FROM notifications WHERE relatedType = 'comment' AND relatedId = ?").run(cid);
+          db.prepare('DELETE FROM comment_likes WHERE commentId = ?').run(cid);
+        }
+        db.prepare('DELETE FROM comments WHERE sharedDreamId = ?').run(s.id);
+        db.prepare('DELETE FROM likes WHERE sharedDreamId = ?').run(s.id);
+        db.prepare('DELETE FROM dream_map_hidden WHERE sharedDreamId = ?').run(s.id);
+        db.prepare('DELETE FROM reports WHERE sharedDreamId = ?').run(s.id);
+        db.prepare('DELETE FROM shared_dreams WHERE id = ?').run(s.id);
+      }
+      db.prepare('DELETE FROM dream_tags WHERE dreamId = ?').run(d.id);
+      db.prepare('DELETE FROM dream_interpretations WHERE dreamId = ?').run(d.id);
+      db.prepare('DELETE FROM dreams WHERE id = ?').run(d.id);
+    }
+    db.prepare('DELETE FROM comments WHERE userId = ?').run(userId);
+    db.prepare('DELETE FROM comment_likes WHERE userId = ?').run(userId);
+    db.prepare('DELETE FROM likes WHERE userId = ?').run(userId);
+    db.prepare('DELETE FROM favorites WHERE userId = ?').run(userId);
+    db.prepare('DELETE FROM reminders WHERE userId = ?').run(userId);
+    db.prepare('DELETE FROM notifications WHERE userId = ?').run(userId);
+    db.prepare('DELETE FROM password_reset_tokens WHERE userId = ?').run(userId);
+    db.prepare('DELETE FROM reports WHERE reporterId = ?').run(userId);
+    db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+    res.json({ message: '账号已注销' });
+  } catch (err) {
+    res.status(500).json({ message: err.message || '注销失败' });
   }
 });
 

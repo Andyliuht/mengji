@@ -8,7 +8,7 @@ function generateId() {
   return 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
 }
 
-// 梦境地图：24 小时内已分享且有经纬度的梦境，仅显示发布时间最久远的 10 条，排除已查看过的
+// 梦境地图：24 小时内已分享且有经纬度的梦境，排除已举报隐藏、已查看过的
 router.get('/dream-map', (req, res) => {
   const list = db.prepare(
     `SELECT sd.id as sharedId, sd.isAnonymous, sd.userId, sd.dreamId, d.content, d.emotion, d.location, d.latitude, d.longitude, d.createdAt,
@@ -19,6 +19,7 @@ router.get('/dream-map', (req, res) => {
      LEFT JOIN dream_map_hidden h ON sd.id = h.sharedDreamId
      WHERE d.latitude IS NOT NULL AND d.longitude IS NOT NULL
        AND d.createdAt >= datetime('now', '-24 hours')
+       AND COALESCE(sd.isHidden, 0) = 0
        AND h.sharedDreamId IS NULL
      ORDER BY d.createdAt ASC
      LIMIT 10`
@@ -51,6 +52,7 @@ router.get('/shared', (req, res) => {
      FROM shared_dreams sd
      JOIN dreams d ON sd.dreamId = d.id
      JOIN users u ON sd.userId = u.id
+     WHERE COALESCE(sd.isHidden, 0) = 0
      ORDER BY sd.createdAt DESC LIMIT 50`
   ).all();
 
@@ -63,6 +65,10 @@ router.get('/shared', (req, res) => {
 });
 
 router.post('/share/:dreamId', authMiddleware, (req, res) => {
+  const muted = db.prepare('SELECT mutedUntil FROM users WHERE id = ?').get(req.userId);
+  if (muted?.mutedUntil && muted.mutedUntil > new Date().toISOString()) {
+    return res.status(403).json({ message: '您已被禁言，请稍后再试' });
+  }
   const dream = db.prepare('SELECT * FROM dreams WHERE id = ? AND userId = ?').get(req.params.dreamId, req.userId);
   if (!dream) return res.status(404).json({ message: '梦境不存在' });
   if (dream.isShared) return res.status(400).json({ message: '已分享过' });
@@ -81,6 +87,10 @@ router.post('/share/:dreamId', authMiddleware, (req, res) => {
 router.post('/:sharedId/comment', authMiddleware, (req, res) => {
   const { content } = req.body;
   if (!content || !content.trim()) return res.status(400).json({ message: '评论内容不能为空' });
+  const muted = db.prepare('SELECT mutedUntil FROM users WHERE id = ?').get(req.userId);
+  if (muted?.mutedUntil && muted.mutedUntil > new Date().toISOString()) {
+    return res.status(403).json({ message: '您已被禁言，请稍后再试' });
+  }
   const shared = db.prepare('SELECT userId FROM shared_dreams WHERE id = ?').get(req.params.sharedId);
   if (!shared) return res.status(404).json({ message: '分享不存在' });
   const id = generateId();
@@ -189,6 +199,28 @@ router.delete('/:sharedId/like', authMiddleware, (req, res) => {
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
+});
+
+// 举报分享的梦境（需登录）
+router.post('/report/:sharedId', authMiddleware, (req, res) => {
+  const { sharedId } = req.params;
+  const { reason } = req.body || {};
+  const shared = db.prepare('SELECT id, userId, dreamId FROM shared_dreams WHERE id = ?').get(sharedId);
+  if (!shared) return res.status(404).json({ message: '分享不存在' });
+  if (shared.userId === req.userId) return res.status(400).json({ message: '不能举报自己的梦境' });
+  const existing = db.prepare('SELECT id FROM reports WHERE sharedDreamId = ? AND reporterId = ?').get(sharedId, req.userId);
+  if (existing) return res.status(400).json({ message: '您已举报过该梦境' });
+  const id = generateId();
+  db.prepare('INSERT INTO reports (id, sharedDreamId, reporterId, reason) VALUES (?, ?, ?, ?)').run(id, sharedId, req.userId, (reason || '').trim() || null);
+  db.prepare('UPDATE shared_dreams SET isHidden = 1 WHERE id = ?').run(sharedId);
+  const reporter = db.prepare('SELECT nickname FROM users WHERE id = ?').get(req.userId);
+  const authors = db.prepare('SELECT id FROM users WHERE role = ?').all('admin');
+  const notifContent = `${reporter?.nickname || '某用户'} 举报了梦境，请前往消息中心处理`;
+  const insertNotif = db.prepare('INSERT INTO notifications (id, userId, type, title, content, relatedId, relatedType) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  for (const a of authors) {
+    insertNotif.run(generateId(), a.id, 'report', '举报通知', notifContent, id, 'report');
+  }
+  res.json({ message: '举报成功，该梦境已暂时隐藏' });
 });
 
 router.post('/favorite', authMiddleware, (req, res) => {

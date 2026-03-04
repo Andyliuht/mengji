@@ -185,6 +185,14 @@ function fetchLocation() {
 onMounted(async () => {
   document.addEventListener('click', closeEmotionOnClickOutside)
   initSpeech()
+  if (!isEdit.value) {
+    const { canAdd } = await request.get('/dreams/can-add-today')
+    if (!canAdd) {
+      alert('您今天已记录过梦境，请先删除今日梦境后再记录新梦境。')
+      router.push('/')
+      return
+    }
+  }
   tags.value = await request.get('/user/tags')
   if (isEdit.value) {
     const dream = await request.get(`/dreams/${route.params.id}`)
