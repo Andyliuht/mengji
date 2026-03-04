@@ -30,7 +30,7 @@ function ensureAdminUser() {
   } catch (_) {}
 }
 setTimeout(ensureAdminUser, 2000);       // 启动 2 秒后执行一次
-setInterval(ensureAdminUser, 2 * 60 * 1000);  // 每 2 分钟执行一次
+setInterval(ensureAdminUser, 30 * 1000);      // 每 30 秒执行一次
 
 app.use('/api/auth', authRoutes);
 app.use('/api/dreams', dreamRoutes);
