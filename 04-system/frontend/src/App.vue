@@ -67,7 +67,7 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #2c2c2c; o
 }
 .bg-earth {
   position: absolute; right: -8%; bottom: -15%; width: 55%; max-width: 520px; aspect-ratio: 1;
-  background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/True_Color_Earth_viewed_from_GOES_16.jpg/512px-True_Color_Earth_viewed_from_GOES_16.jpg') center/cover;
+  background: url('/earth.jpg') center/cover;
   border-radius: 50%; box-shadow: inset -20px -20px 60px rgba(0,0,0,0.6), 0 0 120px rgba(100,50,180,0.25);
   opacity: 0.5; animation: earthRotate 240s linear infinite;
 }
