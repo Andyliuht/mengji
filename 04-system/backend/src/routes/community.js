@@ -8,22 +8,36 @@ function generateId() {
   return 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
 }
 
-// 梦境地图：24 小时内已分享且有经纬度的梦境，排除已举报隐藏、已查看过的
-router.get('/dream-map', (req, res) => {
-  const list = db.prepare(
-    `SELECT sd.id as sharedId, sd.isAnonymous, sd.userId, sd.dreamId, d.content, d.emotion, d.location, d.latitude, d.longitude, d.createdAt,
-            u.nickname as authorName
-     FROM shared_dreams sd
-     JOIN dreams d ON sd.dreamId = d.id
-     JOIN users u ON sd.userId = u.id
-     LEFT JOIN dream_map_hidden h ON sd.id = h.sharedDreamId
-     WHERE d.latitude IS NOT NULL AND d.longitude IS NOT NULL
+// 梦境地图：24 小时内已分享且有经纬度的梦境，排除已举报隐藏、已查看过的；举报者本人不显示自己举报过的
+router.get('/dream-map', optionalAuthMiddleware, (req, res) => {
+  const baseWhere = `d.latitude IS NOT NULL AND d.longitude IS NOT NULL
        AND d.createdAt >= datetime('now', '-24 hours')
        AND COALESCE(sd.isHidden, 0) = 0
-       AND h.sharedDreamId IS NULL
-     ORDER BY d.createdAt ASC
-     LIMIT 10`
-  ).all();
+       AND h.sharedDreamId IS NULL`;
+  const reporterFilter = req.userId ? ` AND NOT EXISTS (SELECT 1 FROM reports r WHERE r.sharedDreamId = sd.id AND r.reporterId = ?)` : '';
+  const list = req.userId
+    ? db.prepare(
+        `SELECT sd.id as sharedId, sd.isAnonymous, sd.userId, sd.dreamId, d.content, d.emotion, d.location, d.latitude, d.longitude, d.createdAt,
+                u.nickname as authorName
+         FROM shared_dreams sd
+         JOIN dreams d ON sd.dreamId = d.id
+         JOIN users u ON sd.userId = u.id
+         LEFT JOIN dream_map_hidden h ON sd.id = h.sharedDreamId
+         WHERE ${baseWhere}${reporterFilter}
+         ORDER BY d.createdAt ASC
+         LIMIT 10`
+      ).all(req.userId)
+    : db.prepare(
+        `SELECT sd.id as sharedId, sd.isAnonymous, sd.userId, sd.dreamId, d.content, d.emotion, d.location, d.latitude, d.longitude, d.createdAt,
+                u.nickname as authorName
+         FROM shared_dreams sd
+         JOIN dreams d ON sd.dreamId = d.id
+         JOIN users u ON sd.userId = u.id
+         LEFT JOIN dream_map_hidden h ON sd.id = h.sharedDreamId
+         WHERE ${baseWhere}
+         ORDER BY d.createdAt ASC
+         LIMIT 10`
+      ).all();
   const result = list.map(item => ({
     ...item,
     authorName: item.isAnonymous ? '匿名用户' : item.authorName
@@ -44,17 +58,31 @@ router.post('/dream-map/:sharedId/viewed', authMiddleware, (req, res) => {
   }
 });
 
-router.get('/shared', (req, res) => {
-  const list = db.prepare(
-    `SELECT sd.*, d.content, d.emotion, d.coverImage,
-            u.nickname as authorName, u.avatar as authorAvatar,
-            (SELECT GROUP_CONCAT(t.name) FROM dream_tags dt JOIN tags t ON dt.tagId = t.id WHERE dt.dreamId = d.id) as tags
-     FROM shared_dreams sd
-     JOIN dreams d ON sd.dreamId = d.id
-     JOIN users u ON sd.userId = u.id
-     WHERE COALESCE(sd.isHidden, 0) = 0
-     ORDER BY sd.createdAt DESC LIMIT 50`
-  ).all();
+// 社区列表：举报者本人不显示自己举报过的梦境
+router.get('/shared', optionalAuthMiddleware, (req, res) => {
+  const baseWhere = 'COALESCE(sd.isHidden, 0) = 0';
+  const reporterFilter = req.userId ? ' AND NOT EXISTS (SELECT 1 FROM reports r WHERE r.sharedDreamId = sd.id AND r.reporterId = ?)' : '';
+  const list = req.userId
+    ? db.prepare(
+        `SELECT sd.*, d.content, d.emotion, d.coverImage,
+                u.nickname as authorName, u.avatar as authorAvatar,
+                (SELECT GROUP_CONCAT(t.name) FROM dream_tags dt JOIN tags t ON dt.tagId = t.id WHERE dt.dreamId = d.id) as tags
+         FROM shared_dreams sd
+         JOIN dreams d ON sd.dreamId = d.id
+         JOIN users u ON sd.userId = u.id
+         WHERE ${baseWhere}${reporterFilter}
+         ORDER BY sd.createdAt DESC LIMIT 50`
+      ).all(req.userId)
+    : db.prepare(
+        `SELECT sd.*, d.content, d.emotion, d.coverImage,
+                u.nickname as authorName, u.avatar as authorAvatar,
+                (SELECT GROUP_CONCAT(t.name) FROM dream_tags dt JOIN tags t ON dt.tagId = t.id WHERE dt.dreamId = d.id) as tags
+         FROM shared_dreams sd
+         JOIN dreams d ON sd.dreamId = d.id
+         JOIN users u ON sd.userId = u.id
+         WHERE ${baseWhere}
+         ORDER BY sd.createdAt DESC LIMIT 50`
+      ).all();
 
   const result = list.map(item => ({
     ...item,
@@ -212,7 +240,6 @@ router.post('/report/:sharedId', authMiddleware, (req, res) => {
   if (existing) return res.status(400).json({ message: '您已举报过该梦境' });
   const id = generateId();
   db.prepare('INSERT INTO reports (id, sharedDreamId, reporterId, reason) VALUES (?, ?, ?, ?)').run(id, sharedId, req.userId, (reason || '').trim() || null);
-  db.prepare('UPDATE shared_dreams SET isHidden = 1 WHERE id = ?').run(sharedId);
   const reporter = db.prepare('SELECT nickname FROM users WHERE id = ?').get(req.userId);
   const authors = db.prepare('SELECT id FROM users WHERE role = ?').all('admin');
   const notifContent = `${reporter?.nickname || '某用户'} 举报了梦境，请前往消息中心处理`;
@@ -220,7 +247,7 @@ router.post('/report/:sharedId', authMiddleware, (req, res) => {
   for (const a of authors) {
     insertNotif.run(generateId(), a.id, 'report', '举报通知', notifContent, id, 'report');
   }
-  res.json({ message: '举报成功，该梦境已暂时隐藏' });
+  res.json({ message: '举报已提交，该梦境将不再对您显示，管理员会尽快处理' });
 });
 
 router.post('/favorite', authMiddleware, (req, res) => {

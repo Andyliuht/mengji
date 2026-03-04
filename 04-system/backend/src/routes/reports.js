@@ -53,16 +53,19 @@ router.post('/:reportId/delete', authMiddleware, adminMiddleware, (req, res) => 
   }
 });
 
-// 管理员：禁言被举报用户一天
+// 管理员：禁言被举报用户（支持 1/7/30 天）
 router.post('/:reportId/mute', authMiddleware, adminMiddleware, (req, res) => {
   const report = db.prepare('SELECT * FROM reports WHERE id = ? AND status = ?').get(req.params.reportId, 'pending');
   if (!report) return res.status(404).json({ message: '举报不存在或已处理' });
   const shared = db.prepare('SELECT userId FROM shared_dreams WHERE id = ?').get(report.sharedDreamId);
   if (!shared) return res.status(404).json({ message: '分享不存在' });
-  const muteUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const days = Number(req.body?.days) || 1;
+  const validDays = [1, 7, 30].includes(days) ? days : 1;
+  const muteUntil = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000).toISOString();
   db.prepare('UPDATE users SET mutedUntil = ? WHERE id = ?').run(muteUntil, shared.userId);
   db.prepare('UPDATE reports SET status = ? WHERE id = ?').run('resolved_muted', report.id);
-  res.json({ message: '已禁言该用户 24 小时' });
+  const dayLabel = validDays === 1 ? '24 小时' : `${validDays} 天`;
+  res.json({ message: `已禁言该用户 ${dayLabel}` });
 });
 
 export default router;

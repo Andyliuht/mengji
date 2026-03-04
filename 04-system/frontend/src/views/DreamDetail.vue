@@ -39,7 +39,7 @@
         </div>
       </div>
       <div class="sections">
-        <section class="section">
+        <section v-if="route.query.from !== 'map'" class="section">
           <h3>AI 解梦</h3>
           <div v-if="interpretation" class="interpretation">
             <p v-if="interpExpanded">{{ interpretation.content }}</p>
@@ -55,7 +55,7 @@
             {{ interpLoading ? '解析中...' : '获取 AI 解梦' }}
           </button>
         </section>
-        <section class="section">
+        <section v-if="route.query.from !== 'map'" class="section">
           <h3>相似梦境</h3>
           <button @click="getSimilar" :disabled="similarLoading" class="btn-outline">
             {{ similarLoading ? '匹配中...' : '查找相似梦境' }}
@@ -151,12 +151,12 @@ const needInterpExpand = computed(() => (interpretation.value?.content?.length |
 
 watch(interpretation, () => { interpExpanded.value = false })
 
-function closePreview(e) {
-  if (e.key === 'Escape') previewSrc.value = null
-}
-
-onMounted(async () => {
-  document.addEventListener('keydown', closePreview)
+async function loadDream() {
+  loading.value = true
+  dream.value = null
+  interpretation.value = null
+  similar.value = []
+  similarSearched.value = false
   try {
     dream.value = await request.get(`/dreams/${route.params.id}`)
     try {
@@ -174,6 +174,16 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+watch(() => route.params.id, loadDream, { immediate: true })
+
+function closePreview(e) {
+  if (e.key === 'Escape') previewSrc.value = null
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', closePreview)
 })
 
 onUnmounted(() => {
@@ -224,7 +234,7 @@ async function getSimilar() {
 
 function dismissShare() {
   shareSectionDismissed.value = true
-  setTimeout(() => router.push('/'), 2000)
+  setTimeout(() => router.push('/'), 1000)
 }
 
 async function shareDream(isAnonymous) {
@@ -239,7 +249,7 @@ async function shareDream(isAnonymous) {
       finally { commentsLoading.value = false }
     }
     alert('分享成功')
-    setTimeout(() => router.push('/community'), 2000)
+    setTimeout(() => router.push('/community'), 1000)
   } catch (e) {
     alert((e && e.message) || '分享失败')
   }

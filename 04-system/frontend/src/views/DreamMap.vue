@@ -24,7 +24,7 @@
         <div class="popup-actions">
           <router-link
             v-if="userStore.token && selectedDream.userId === userStore.userId"
-            :to="`/dream/${selectedDream.dreamId}`"
+            :to="`/dream/${selectedDream.dreamId}?from=map`"
             class="popup-link"
             @click="selectedDream = null"
           >
@@ -166,10 +166,10 @@ function selectDream(dream) {
 }
 
 async function reportDream(dream) {
-  if (!confirm('确定要举报该梦境吗？举报后该梦境将暂时从社区和地图中隐藏。')) return
+  if (!confirm('确定要举报该梦境吗？举报后该梦境将不再对您显示，其他用户仍可看到，管理员会尽快处理。')) return
   try {
     const res = await request.post(`/community/report/${dream.sharedId}`)
-    alert(res.message || '举报成功')
+    alert(res.message || '举报已提交')
     dreamsOnMap.value = dreamsOnMap.value.filter(d => d.sharedId !== dream.sharedId)
     selectedDream.value = null
     hasMarkers.value = dreamsOnMap.value.length > 0
@@ -284,7 +284,7 @@ onUnmounted(() => {
   padding: 2rem;
 }
 .dream-popup {
-  background: rgba(255,255,255,0.98);
+  background: rgba(255,255,255,0.8);
   border-radius: 12px;
   padding: 1.5rem;
   max-width: 420px;
@@ -296,8 +296,8 @@ onUnmounted(() => {
 }
 .popup-close {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  top: 0.25rem;
+  right: 0.25rem;
   width: 32px;
   height: 32px;
   border: none;

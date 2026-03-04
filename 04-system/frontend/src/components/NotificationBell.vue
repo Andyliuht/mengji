@@ -39,9 +39,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../api/request'
+import { useUserStore } from '../stores/user'
 import { formatDate } from '../utils/date'
 
 const router = useRouter()
+const userStore = useUserStore()
 const open = ref(false)
 const list = ref([])
 const unreadCount = ref(0)
@@ -119,12 +121,17 @@ function handleClick(n) {
     if (unreadCount.value > 0) unreadCount.value--
     emitChanged()
   }
-  if (n.dreamId) {
-    open.value = false
+  open.value = false
+  if (n.type === 'official') {
+    router.push({ path: '/notifications', query: { section: 'my-messages' } })
+  } else if (n.relatedType === 'report' && userStore.isAdmin) {
+    router.push({ path: '/notifications', query: { section: 'reports' } })
+  } else if (n.dreamId) {
     router.push(`/dream/${n.dreamId}`)
   } else if (n.relatedType === 'shared_dream' && n.relatedId) {
-    open.value = false
     router.push({ path: '/community', query: { highlight: n.relatedId } })
+  } else if (n.relatedType === 'comment' && n.relatedId) {
+    router.push({ path: '/community' })
   }
 }
 

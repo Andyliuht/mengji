@@ -18,7 +18,7 @@
     </section>
 
     <!-- 管理员：举报管理 -->
-    <section v-if="userStore.isAdmin" class="reports-section">
+    <section v-if="userStore.isAdmin" ref="reportsSectionRef" class="reports-section">
       <h2>举报管理</h2>
       <div v-if="reportsLoading" class="loading">加载中...</div>
       <div v-else-if="!reportsList.length" class="empty">暂无待处理举报</div>
@@ -29,14 +29,16 @@
             <div class="report-content">{{ (r.content || '').slice(0, 80) }}{{ (r.content || '').length > 80 ? '...' : '' }}</div>
             <div class="report-actions">
               <button @click="handleReportDelete(r)" class="btn-danger">删除梦境</button>
-              <button @click="handleReportMute(r)" class="btn-mute">禁言一天</button>
+              <button @click="handleReportMute(r, 1)" class="btn-mute">禁言1天</button>
+              <button @click="handleReportMute(r, 7)" class="btn-mute">禁言7天</button>
+              <button @click="handleReportMute(r, 30)" class="btn-mute">禁言30天</button>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="list-section">
+    <section ref="listSectionRef" class="list-section">
       <div class="list-header">
         <span>我的消息</span>
         <div class="header-actions">
@@ -69,12 +71,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import request from '../api/request'
 import { useUserStore } from '../stores/user'
 import { formatDateTime } from '../utils/date'
 
+const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const list = ref([])
@@ -87,6 +90,18 @@ const broadcastMsg = ref('')
 const broadcastError = ref(false)
 const reportsList = ref([])
 const reportsLoading = ref(false)
+const reportsSectionRef = ref(null)
+const listSectionRef = ref(null)
+
+function scrollToSection(section) {
+  nextTick(() => {
+    if (section === 'reports' && reportsSectionRef.value) {
+      reportsSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else if (section === 'my-messages' && listSectionRef.value) {
+      listSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  })
+}
 
 function emitChanged() {
   window.dispatchEvent(new CustomEvent('notifications-changed'))
@@ -98,6 +113,10 @@ onMounted(async () => {
   if (userStore.isAdmin) await fetchReports()
   window.addEventListener('notifications-changed', fetchList)
   window.addEventListener('notifications-changed', fetchUnreadCount)
+  scrollToSection(route.query.section)
+})
+watch(() => route.query.section, (section) => {
+  if (section) scrollToSection(section)
 })
 onUnmounted(() => {
   window.removeEventListener('notifications-changed', fetchList)
@@ -148,10 +167,11 @@ async function handleReportDelete(r) {
   }
 }
 
-async function handleReportMute(r) {
-  if (!confirm('确定要禁言该用户 24 小时吗？')) return
+async function handleReportMute(r, days = 1) {
+  const label = days === 1 ? '24 小时' : `${days} 天`
+  if (!confirm(`确定要禁言该用户 ${label} 吗？`)) return
   try {
-    await request.post(`/reports/${r.id}/mute`)
+    await request.post(`/reports/${r.id}/mute`, { days })
     reportsList.value = reportsList.value.filter(x => x.id !== r.id)
     await fetchList()
     emitChanged()
@@ -202,8 +222,15 @@ function handleClick(n) {
     if (unreadCount.value > 0) unreadCount.value--
     emitChanged()
   }
+  if (n.type === 'official') {
+    scrollToSection('my-messages')
+    return
+  }
   if (n.relatedType === 'report') {
-    fetchReports()
+    if (userStore.isAdmin) {
+      fetchReports()
+      scrollToSection('reports')
+    }
     return
   }
   if (n.dreamId) {
@@ -279,7 +306,7 @@ async function doBroadcast() {
 }
 .report-meta { font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; }
 .report-content { font-size: 0.9rem; color: #333; margin-bottom: 0.75rem; line-height: 1.5; }
-.report-actions { display: flex; gap: 0.5rem; }
+.report-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .btn-danger { padding: 0.4rem 0.8rem; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
 .btn-danger:hover { background: #c82333; }
 .btn-mute { padding: 0.4rem 0.8rem; background: #6b5b95; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }

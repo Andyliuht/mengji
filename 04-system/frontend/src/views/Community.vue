@@ -223,10 +223,10 @@ async function showComments(item) {
 }
 
 async function reportDream(item) {
-  if (!confirm('确定要举报该梦境吗？举报后该梦境将暂时从社区和地图中隐藏。')) return
+  if (!confirm('确定要举报该梦境吗？举报后该梦境将不再对您显示，其他用户仍可看到，管理员会尽快处理。')) return
   try {
     const res = await request.post(`/community/report/${item.id}`)
-    alert(res.message || '举报成功')
+    alert(res.message || '举报已提交')
     list.value = list.value.filter(i => i.id !== item.id)
   } catch (e) {
     alert((e && e.message) || '举报失败')
