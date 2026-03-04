@@ -19,11 +19,17 @@ request.interceptors.request.use(config => {
 request.interceptors.response.use(
   res => res.data,
   err => {
-    if (err.response?.status === 401) {
+    const url = err.config?.url || ''
+    const isAuthRequest = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/forgot-password') || url.includes('/auth/reset-password')
+    if (err.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem('token')
       window.location.href = '/login'
     }
-    return Promise.reject(err.response?.data?.message || err.message)
+    const msg = err.response?.data?.message || err.message
+    const fallback = err.code === 'ERR_NETWORK' || !err.response
+      ? '无法连接服务器，请确认后端已启动（npm run dev）'
+      : '请求失败'
+    return Promise.reject(new Error(msg || fallback))
   }
 )
 

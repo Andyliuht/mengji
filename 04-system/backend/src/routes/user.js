@@ -13,6 +13,21 @@ router.get('/tags', (req, res) => {
   res.json(tags);
 });
 
+// 创建或获取自定义标签（需登录）
+router.post('/tags', authMiddleware, (req, res) => {
+  const { name } = req.body;
+  const trimmed = (name || '').trim();
+  if (!trimmed) return res.status(400).json({ message: '标签名不能为空' });
+  if (trimmed.length > 20) return res.status(400).json({ message: '标签名最多20个字符' });
+  let tag = db.prepare('SELECT * FROM tags WHERE name = ?').get(trimmed);
+  if (!tag) {
+    const id = generateId();
+    db.prepare('INSERT INTO tags (id, name) VALUES (?, ?)').run(id, trimmed);
+    tag = db.prepare('SELECT * FROM tags WHERE id = ?').get(id);
+  }
+  res.status(201).json(tag);
+});
+
 router.get('/reminder', authMiddleware, (req, res) => {
   const r = db.prepare('SELECT * FROM reminders WHERE userId = ?').get(req.userId);
   res.json(r || { remindTime: '07:00', isEnabled: 1 });
@@ -44,6 +59,7 @@ router.get('/stats', authMiddleware, (req, res) => {
   const themeCount = {};
   const emotionCount = {};
   const byMonth = {};
+  const byDay = {};
 
   dreams.forEach(d => {
     (d.tags || '').split(',').filter(Boolean).forEach(t => {
@@ -52,13 +68,20 @@ router.get('/stats', authMiddleware, (req, res) => {
     if (d.emotion) emotionCount[d.emotion] = (emotionCount[d.emotion] || 0) + 1;
     const month = d.createdAt?.slice(0, 7);
     if (month) byMonth[month] = (byMonth[month] || 0) + 1;
+    const day = d.createdAt?.slice(0, 10);
+    if (day) {
+      if (!byDay[day]) byDay[day] = {};
+      const emo = d.emotion || '无';
+      byDay[day][emo] = (byDay[day][emo] || 0) + 1;
+    }
   });
 
   res.json({
     totalDreams: dreams.length,
     themeDistribution: themeCount,
     emotionDistribution: emotionCount,
-    monthlyRecords: byMonth
+    monthlyRecords: byMonth,
+    dailyEmotions: byDay
   });
 });
 

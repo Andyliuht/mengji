@@ -17,6 +17,19 @@ export function authMiddleware(req, res, next) {
   }
 }
 
+export function optionalAuthMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, SECRET);
+    req.userId = decoded.userId;
+  } catch (_) {}
+  next();
+}
+
 export function generateToken(userId) {
   return jwt.sign({ userId }, SECRET, { expiresIn: '7d' });
 }
