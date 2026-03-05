@@ -59,6 +59,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../api/request'
 import { useUserStore } from '../stores/user'
+import { useDreamStore } from '../stores/dream'
 import { formatDate } from '../utils/date'
 
 const router = useRouter()
@@ -111,6 +112,7 @@ const DREAM_QUOTES = [
 ]
 
 const userStore = useUserStore()
+const dreamStore = useDreamStore()
 const dreams = ref([])
 const selectedIds = ref([])
 const loading = ref(true)
@@ -162,6 +164,7 @@ async function deleteSelected() {
     const res = await request.post('/dreams/batch-delete', { ids: [...selectedIds.value] })
     dreams.value = dreams.value.filter(d => !selectedIds.value.includes(d.id))
     selectedIds.value = []
+    dreamStore.refreshHasRecordedToday()
     alert(typeof res === 'object' && res?.message ? res.message : '删除成功')
   } catch (e) {
     alert((typeof e === 'string' ? e : e?.message) || '删除失败')

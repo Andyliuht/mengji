@@ -37,10 +37,6 @@
           </div>
         </div>
       </div>
-      <div class="form-group" v-if="locationStatus">
-        <label>记录地点</label>
-        <p class="location-text">{{ locationStatus }}</p>
-      </div>
       <div class="form-group">
         <label>情绪</label>
         <div class="emotion-picker" ref="emotionPickerRef">
@@ -65,6 +61,22 @@
           </div>
         </div>
       </div>
+      <div class="form-group" v-if="locationStatus">
+        <div class="location-label-row">
+          <label>记录地点</label>
+          <button
+            v-if="locationSupported"
+            type="button"
+            class="relocate-btn"
+            :disabled="locationFetching"
+            title="重新获取当前位置"
+            @click="handleRelocate"
+          >
+            {{ locationFetching ? '定位中...' : '重新定位' }}
+          </button>
+        </div>
+        <p class="location-text">{{ locationStatus }}</p>
+      </div>
       <p v-if="error" class="error">{{ error }}</p>
       <div class="actions">
         <button type="submit" class="btn-primary">保存</button>
@@ -78,9 +90,11 @@
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import request from '../api/request'
+import { useDreamStore } from '../stores/dream'
 
 const route = useRoute()
 const router = useRouter()
+const dreamStore = useDreamStore()
 const isEdit = computed(() => !!route.params.id)
 const tags = ref([])
 const customTagName = ref('')
@@ -111,6 +125,16 @@ const form = reactive({
   longitude: null
 })
 const locationStatus = ref('')
+const locationSupported = ref(typeof navigator !== 'undefined' && !!navigator.geolocation)
+const locationFetching = ref(false)
+
+async function handleRelocate() {
+  if (!locationSupported.value || locationFetching.value) return
+  locationFetching.value = true
+  locationStatus.value = '正在重新获取位置...'
+  await fetchLocation()
+  locationFetching.value = false
+}
 
 function closeEmotionOnClickOutside(e) {
   if (emotionPickerRef.value && !emotionPickerRef.value.contains(e.target)) {
@@ -251,6 +275,7 @@ async function save() {
       router.push(`/dream/${route.params.id}`)
     } else {
       const res = await request.post('/dreams', form)
+      dreamStore.refreshHasRecordedToday()
       router.push(`/dream/${res.id}`)
     }
   } catch (e) {
@@ -260,7 +285,7 @@ async function save() {
 </script>
 
 <style scoped>
-.dream-edit { max-width: 600px; background: rgba(255,255,255,0.98); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.25); backdrop-filter: blur(8px); }
+.dream-edit { max-width: 600px; margin-top: 1.5rem; background: rgba(255,255,255,0.98); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.25); backdrop-filter: blur(8px); }
 .dream-edit h1 { margin-bottom: 1.5rem; font-size: 1.5rem; }
 .form-group { margin-bottom: 1.25rem; }
 .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #555; }
@@ -275,6 +300,11 @@ async function save() {
 .voice-hint { margin-top: 0.35rem; font-size: 0.8rem; color: #999; }
 @keyframes pulse { 50% { opacity: 0.8; } }
 .form-group select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+.location-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+.location-label-row label { margin-bottom: 0; }
+.relocate-btn { padding: 0.35rem 0.75rem; border: 1px solid #8e7cc3; border-radius: 6px; background: #f8f6fc; color: #6b5b95; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+.relocate-btn:hover:not(:disabled) { background: #e8e0f0; }
+.relocate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .location-text { margin: 0; padding: 0.5rem 0; font-size: 0.95rem; color: #555; }
 .emotion-picker { position: relative; }
 .emotion-select { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; background: white; cursor: pointer; font-size: 1rem; }
@@ -282,17 +312,17 @@ async function save() {
 .emotion-display { font-size: 1.5rem; }
 .emotion-display.placeholder { font-size: 0.95rem; color: #999; }
 .emotion-arrow { font-size: 0.6rem; color: #888; }
-.emotion-dropdown { position: absolute; top: 100%; left: 0; min-width: 360px; margin-top: 4px; padding: 0.75rem; border: 1px solid #ddd; border-radius: 10px; background: white; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 10; display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem; max-height: 340px; overflow-y: auto; }
+.emotion-dropdown { position: absolute; top: 100%; left: 0; min-width: 420px; margin-top: 4px; padding: 0.75rem; border: 1px solid #ddd; border-radius: 10px; background: white; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 10; display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.5rem; max-height: 340px; overflow-y: auto; }
 .emotion-clear { font-size: 0.9rem; color: #888; grid-column: 1 / -1; padding: 0.5rem; }
-.emotion-item { padding: 0.6rem; font-size: 2rem; border: none; border-radius: 8px; background: transparent; cursor: pointer; min-height: 48px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.emotion-item { padding: 0.4rem; font-size: 1.4rem; border: none; border-radius: 8px; background: transparent; cursor: pointer; min-height: 36px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .emotion-item:hover { background: #f8f6fc; transform: scale(1.08); }
 .tag-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 .tag { padding: 0.35rem 0.75rem; border-radius: 20px; background: #f0f0f0; color: #666; cursor: pointer; font-size: 0.9rem; }
 .tag.active { background: #e8e0f0; color: #6b5b95; }
-.tag-add { display: flex; gap: 0.5rem; align-items: center; margin-left: auto; }
+.tag-add { display: flex; gap: 0.5rem; align-items: stretch; margin-left: auto; }
 .tag-add input { flex: 1; max-width: 200px; padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
 .tag-add input:focus { outline: none; border-color: #8e7cc3; }
-.tag-add-btn { padding: 0.4rem 0.8rem; border: 1px solid #8e7cc3; border-radius: 8px; background: #f8f6fc; color: #6b5b95; font-size: 0.9rem; cursor: pointer; }
+.tag-add-btn { padding: 0 0.8rem; border: 1px solid #8e7cc3; border-radius: 8px; background: #f8f6fc; color: #6b5b95; font-size: 0.9rem; cursor: pointer; }
 .tag-add-btn:hover { background: #e8e0f0; }
 .error { color: #c44; font-size: 0.9rem; margin-bottom: 0.5rem; }
 .actions { display: flex; gap: 1rem; margin-top: 1.5rem; }

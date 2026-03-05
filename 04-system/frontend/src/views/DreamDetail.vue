@@ -122,11 +122,13 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import request from '../api/request'
 import { useUserStore } from '../stores/user'
+import { useDreamStore } from '../stores/dream'
 import { formatDateTime } from '../utils/date'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const dreamStore = useDreamStore()
 const dream = ref(null)
 const interpretation = ref(null)
 const similar = ref([])
@@ -276,6 +278,7 @@ async function deleteDream() {
   if (!confirm('确定要删除这条梦境吗？')) return
   try {
     await request.delete(`/dreams/${route.params.id}`)
+    dreamStore.refreshHasRecordedToday()
     router.push('/')
   } catch (e) {
     alert(e.message || '删除失败')

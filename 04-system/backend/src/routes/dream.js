@@ -14,12 +14,13 @@ router.use(authMiddleware);
 router.get('/can-add-today', (req, res) => {
   const user = db.prepare('SELECT role FROM users WHERE id = ?').get(req.userId);
   if (user?.role === 'admin') {
-    return res.json({ canAdd: true });
+    return res.json({ canAdd: true, hasRecordedToday: false });
   }
   const todayCount = db.prepare(
     "SELECT COUNT(*) as c FROM dreams WHERE userId = ? AND date(createdAt) = date('now')"
   ).get(req.userId);
-  res.json({ canAdd: todayCount.c < 1 });
+  const hasRecordedToday = todayCount.c >= 1;
+  res.json({ canAdd: !hasRecordedToday, hasRecordedToday });
 });
 
 router.get('/', (req, res) => {

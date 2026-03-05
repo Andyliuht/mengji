@@ -30,7 +30,7 @@
           <button class="item-delete" @click.stop="deleteOne(n)" title="删除">×</button>
         </div>
       </div>
-      <router-link to="/notifications" class="dropdown-footer" @click="open = false">查看全部</router-link>
+      <router-link to="/notifications" class="dropdown-footer" :class="{ 'dropdown-footer-admin': userStore.isAdmin }" @click="open = false">查看全部</router-link>
     </div>
   </div>
 </template>
@@ -213,4 +213,8 @@ onUnmounted(() => {
   background: #f0ecf8; font-weight: 500;
 }
 .dropdown-footer:hover { background: #e8e0f4; color: #5a4a84 !important; }
+.dropdown-footer-admin {
+  color: #1d4ed8 !important; background: #dbeafe !important;
+}
+.dropdown-footer-admin:hover { background: #bfdbfe !important; color: #1e40af !important; }
 </style>

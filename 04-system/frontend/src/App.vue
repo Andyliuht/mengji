@@ -2,7 +2,8 @@
   <div id="app">
     <div class="bg-layer">
       <div class="bg-gradient"></div>
-      <div class="bg-earth"></div>
+      <div class="bg-earth" v-show="dreamStore.hasRecordedToday"></div>
+      <div class="bg-moon" v-show="!dreamStore.hasRecordedToday"></div>
       <div class="bg-stars"></div>
     </div>
     <header class="header" :class="{ 'header-admin': userStore.isAdmin }">
@@ -33,12 +34,18 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
+import { watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from './stores/user'
+import { useDreamStore } from './stores/dream'
 import NotificationBell from './components/NotificationBell.vue'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+const dreamStore = useDreamStore()
+
+watch(() => [route.path, userStore.token], () => dreamStore.refreshHasRecordedToday(), { immediate: true })
 
 function logout() {
   userStore.logout()
@@ -69,9 +76,15 @@ body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #2c2c2c; o
   position: absolute; right: -8%; bottom: -15%; width: 55%; max-width: 520px; aspect-ratio: 1;
   background: url('/earth.jpg') center/cover;
   border-radius: 50%; box-shadow: inset -20px -20px 60px rgba(0,0,0,0.6), 0 0 120px rgba(100,50,180,0.25);
-  opacity: 0.5; animation: earthRotate 240s linear infinite;
+  opacity: 0.5; animation: planetRotate 480s linear infinite;
 }
-@keyframes earthRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.bg-moon {
+  position: absolute; right: -8%; bottom: -15%; width: 55%; max-width: 520px; aspect-ratio: 1;
+  background: url('/moon.jpg') center/cover;
+  border-radius: 50%; box-shadow: inset -20px -20px 60px rgba(0,0,0,0.5), 0 0 80px rgba(180,170,200,0.2);
+  opacity: 0.55; animation: planetRotate 480s linear infinite;
+}
+@keyframes planetRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .bg-stars {
   position: absolute; inset: 0;
   background-image:
